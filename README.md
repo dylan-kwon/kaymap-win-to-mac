@@ -1,4 +1,4 @@
-# Kaymap — 피씨방 Windows에서 Parsec으로 Mac 사용
+# Kaymap — Windows에서 Parsec으로 Mac 사용
 
 - 설치·재부팅 없이 실행하는 Windows 10/11 x64용 포터블 키 매핑 프로그램
 - 실행 파일: [kaymap-windows-x64.exe](dist/kaymap-windows-x64.exe)
@@ -21,7 +21,7 @@
 7. 사용 종료 시 Kaymap의 `종료` 버튼 클릭 또는 Kaymap 창 닫기
 
 - 다운로드한 EXE와 함께 설치할 파일 없음
-- 피씨방에서 파일이 초기화되는 경우 다음 방문 시 실행 파일만 다시 복사하여 실행
+- 파일이 초기화되는 환경에서는 다음 사용 시 실행 파일만 다시 복사하여 실행
 - SharpKeys 방식 제외: 재로그인·재부팅 시 설정이 초기화되는 사용자 환경에 부적합
 - 기존 매핑 도구가 실행 중이면 중복 적용 방지를 위해 먼저 해제
 - 이전 Kaymap 실행 중이면 종료 후 새 EXE 실행, 새 창 제목의 `Kaymap 0.2 — 입력 진단` 표시 확인
@@ -81,7 +81,7 @@
 - Parsec 실행 후 Kaymap 실행 순서로 시험, Parsec 재시작 후에는 Kaymap도 종료·재실행하여 시험
 - 관리자 권한으로 실행된 대상에는 같은 권한 수준이 필요할 수 있음, 자동 권한 상승 없음
 - 강제 프로세스 종료·OS 보안 화면·예약 시스템 단축키는 정상 종료 처리와 별개
-- 직접 빌드한 서명되지 않은 EXE, 피씨방 실행 정책에 따른 차단 가능
+- 직접 빌드한 서명되지 않은 EXE, PC의 실행 정책에 따른 차단 가능
 
 ## Win+A가 원격 Mac에서 전체 선택되는 경우
 
@@ -125,4 +125,4 @@ GOOS=windows GOARCH=amd64 CGO_ENABLED=0 go build \
 - Hook 처리 규칙 — [Microsoft LowLevelKeyboardProc](https://learn.microsoft.com/en-us/windows/win32/winmsg/lowlevelkeyboardproc)
 - 합성 입력 및 권한 제약 — [Microsoft SendInput](https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-sendinput)
 - Hook 등록 순서 — [Microsoft Hooks Overview](https://learn.microsoft.com/en-us/windows/win32/winmsg/about-hooks)
-- 기존 프로그램 비교 — [초기 조사 기록](docs/research.md), 피씨방 초기화 조건 반영 전 문서
+- 기존 프로그램 비교 — [초기 조사 기록](docs/research.md), 재부팅 시 설정 초기화 조건 반영 전 문서
