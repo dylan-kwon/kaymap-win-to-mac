@@ -49,7 +49,7 @@ func TestRefreshWaitsForReleasedKeysAndEnabledMapping(t *testing.T) {
 	}
 }
 
-func TestManualRefreshAllowsTimeToReturnToParsec(t *testing.T) {
+func TestManualRefreshAllowsTimeToReturnToTargetWindow(t *testing.T) {
 	var plan RefreshPlan
 	now := time.Unix(100, 0)
 	calls := 0

@@ -28,7 +28,7 @@ func (d *Diagnostic) Record(source uint32, target uint32, attempted bool, sent b
 
 func (d *Diagnostic) Text() string {
 	if d.count == 0 {
-		return "입력 대기 — Parsec 창에서 Win 키를 눌러 보세요."
+		return "입력 대기 — 사용 중인 창에서 Win 키를 눌러 보세요."
 	}
 	state := "출력 전송 없음"
 	if d.attempted {

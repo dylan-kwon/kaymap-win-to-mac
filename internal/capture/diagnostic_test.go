@@ -41,7 +41,7 @@ func TestDiagnosticIgnoresOrdinaryKeys(t *testing.T) {
 
 func TestDiagnosticStartsWithNoInput(t *testing.T) {
 	var report Diagnostic
-	if !strings.Contains(report.Text(), "입력 대기") {
+	if report.Text() != "입력 대기 — 사용 중인 창에서 Win 키를 눌러 보세요." {
 		t.Fatal("missing initial capture status")
 	}
 }

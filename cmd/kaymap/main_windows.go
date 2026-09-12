@@ -256,7 +256,7 @@ func windowProcedure(window uintptr, id uint32, wParam uintptr, lParam uintptr) 
 			return 0
 		case refreshButtonID:
 			app.refresh.Request(time.Now().Add(2 * time.Second))
-			setLabel(app.status, "입력 연결 예약 — 적용 중인 상태로 Parsec 창을 클릭하세요.")
+			setLabel(app.status, "입력 연결 예약 — 적용 중인 상태로 사용할 창을 클릭하세요.")
 			return 0
 		}
 	case wmTimer:
@@ -339,9 +339,9 @@ func main() {
 		return
 	}
 	app.status = addControl("STATIC", "적용 중 — Windows 전체 키보드에 적용", 20, 20, 610, 30, 0)
-	addControl("STATIC", "Alt → Mac Command     Win → Mac Option\r\nCapsLock → Mac Control     좌우 Ctrl → CapsLock\r\n역슬래시(\\) ↔ Backspace\r\n\r\nParsec: Command·Ctrl 교환 Off / Keyboard Immersive Mode On\r\n종료 버튼 또는 창 닫기로 키 매핑 해제", 20, 60, 510, 130, 0)
+	addControl("STATIC", "Alt ↔ Win\r\nCapsLock → Left Ctrl     좌우 Ctrl → CapsLock\r\n역슬래시(\\) ↔ Backspace\r\n\r\n실행 중 Windows 전체 키보드에 적용\r\n종료 버튼 또는 창 닫기로 키 매핑 해제", 20, 60, 510, 130, 0)
 	app.diagnosticLabel = addControl("STATIC", app.diagnostic.Text(), 20, 200, 610, 30, 0)
-	addControl("STATIC", "Windows 전송 성공은 Mac 수신 확인이 아닙니다.", 20, 235, 610, 25, 0)
+	addControl("STATIC", "Windows 전송 성공은 대상 앱의 수신 확인과 별개입니다.", 20, 235, 610, 25, 0)
 	app.pauseButton = addControl("BUTTON", "일시정지", 20, 280, 150, 35, pauseButtonID)
 	addControl("BUTTON", "입력 다시 연결", 185, 280, 180, 35, refreshButtonID)
 	addControl("BUTTON", "종료", 380, 280, 150, 35, exitButtonID)
