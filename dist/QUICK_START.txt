@@ -1,0 +1,24 @@
+Kaymap — 피씨방 Windows에서 Parsec으로 Mac 사용
+
+- Windows 10/11 x64용 시험 버전
+- 설치·재부팅 불필요, 압축 해제 후 kaymap-windows-x64.exe 실행
+- Parsec 실행 및 Mac 연결 후 Kaymap 실행 권장
+- Windows Parsec → Settings → Client → Swap Command and Ctrl for MacOS: Off
+- Parsec Keyboard Immersive Mode 활성화, 기본 토글 Ctrl+Shift+I
+- 모든 키를 뗀 상태에서 Kaymap 실행 후 Parsec 창 클릭
+- Alt → Mac Command, Win → Mac Option
+- CapsLock → Mac Control, 좌우 Ctrl → CapsLock
+- 적용 중 Control+C 입력: 물리 CapsLock+C 사용
+- 적용 중 Parsec 토글: 물리 CapsLock+Shift+I 사용
+- 이전 Kaymap 종료 후 새 EXE 실행, 창 제목의 CapsLock ↔ Ctrl 표시 확인
+- 역슬래시(\) ↔ Backspace 교환, US ANSI 배열 기준
+- 전체 Windows 키보드에 적용, 일시정지 버튼으로 원래 배열 복구
+- 사용 후 종료 버튼 또는 창 닫기로 해제
+- 다음 방문 시 파일만 다시 복사하여 실행
+
+- 테스트 결과: 키 매핑 로직·입력 패킷 자동 테스트 통과, Windows x64 빌드 완료
+- 미검증: 실제 Windows UI·Hook 실행·Parsec 원격 입력
+- 첫 확인: 메모장에서 역슬래시 삭제와 Backspace 문자 입력 확인 후 Mac에서 Alt+C 복사 시험
+- 메모장에서만 작동하고 Parsec에서 미작동하는 경우: 해당 Parsec 환경과 이 입력 방식의 호환성 미확보
+- 입력 전송 실패 표시 시: 대상 앱과의 권한 수준 차이 확인 필요
+- 직접 빌드한 서명되지 않은 실행 파일, 피씨방 실행 정책에 따라 차단 가능

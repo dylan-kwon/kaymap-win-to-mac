@@ -1,0 +1,295 @@
+//go:build windows && (amd64 || arm64)
+
+package main
+
+import (
+	"runtime"
+	"syscall"
+	"unsafe"
+
+	"kaymap/internal/remap"
+	"kaymap/internal/wininput"
+)
+
+var (
+	user32            = syscall.NewLazyDLL("user32.dll")
+	kernel32          = syscall.NewLazyDLL("kernel32.dll")
+	gdi32             = syscall.NewLazyDLL("gdi32.dll")
+	setHook           = user32.NewProc("SetWindowsHookExW")
+	unhook            = user32.NewProc("UnhookWindowsHookEx")
+	nextHook          = user32.NewProc("CallNextHookEx")
+	sendInput         = user32.NewProc("SendInput")
+	registerClass     = user32.NewProc("RegisterClassExW")
+	createWindow      = user32.NewProc("CreateWindowExW")
+	defaultWindowProc = user32.NewProc("DefWindowProcW")
+	showWindow        = user32.NewProc("ShowWindow")
+	getMessage        = user32.NewProc("GetMessageW")
+	translateMessage  = user32.NewProc("TranslateMessage")
+	dispatchMessage   = user32.NewProc("DispatchMessageW")
+	postMessage       = user32.NewProc("PostMessageW")
+	postQuit          = user32.NewProc("PostQuitMessage")
+	destroyWindow     = user32.NewProc("DestroyWindow")
+	setText           = user32.NewProc("SetWindowTextW")
+	sendMessage       = user32.NewProc("SendMessageW")
+	getAsyncKeyState  = user32.NewProc("GetAsyncKeyState")
+	messageBox        = user32.NewProc("MessageBoxW")
+	loadCursor        = user32.NewProc("LoadCursorW")
+	getModuleHandle   = kernel32.NewProc("GetModuleHandleW")
+	createMutex       = kernel32.NewProc("CreateMutexW")
+	closeHandle       = kernel32.NewProc("CloseHandle")
+	getStockObject    = gdi32.NewProc("GetStockObject")
+	app               application
+)
+
+const (
+	wmClose        = 0x0010
+	wmDestroy      = 0x0002
+	wmCommand      = 0x0111
+	wmInputFailure = 0x8001
+	pauseButtonID  = 101
+	exitButtonID   = 102
+)
+
+type windowClass struct {
+	Size        uint32
+	Style       uint32
+	Procedure   uintptr
+	ClassExtra  int32
+	WindowExtra int32
+	Instance    uintptr
+	Icon        uintptr
+	Cursor      uintptr
+	Background  uintptr
+	MenuName    *uint16
+	ClassName   *uint16
+	SmallIcon   uintptr
+}
+
+type message struct {
+	Window  uintptr
+	ID      uint32
+	WParam  uintptr
+	LParam  uintptr
+	Time    uint32
+	X       int32
+	Y       int32
+	Private uint32
+}
+
+type keyboardEvent struct {
+	Key   uint32
+	Scan  uint32
+	Flags uint32
+	Time  uint32
+	Extra uintptr
+}
+
+type application struct {
+	engine      *remap.Engine
+	window      uintptr
+	status      uintptr
+	pauseButton uintptr
+	hook        uintptr
+	failed      bool
+}
+
+func wide(text string) *uint16 {
+	return syscall.StringToUTF16Ptr(text)
+}
+
+func setLabel(window uintptr, text string) {
+	setText.Call(window, uintptr(unsafe.Pointer(wide(text))))
+}
+
+func alert(text string) {
+	messageBox.Call(app.window, uintptr(unsafe.Pointer(wide(text))), uintptr(unsafe.Pointer(wide("Kaymap"))), 0x10)
+}
+
+func emit(event remap.Output) bool {
+	packet, ok := wininput.Encode(event.Key, event.Down)
+	if !ok {
+		return false
+	}
+	sent, _, _ := sendInput.Call(1, uintptr(unsafe.Pointer(&packet[0])), uintptr(len(packet)))
+	runtime.KeepAlive(packet)
+	if sent != 1 && !app.failed {
+		app.failed = true
+		postMessage.Call(app.window, wmInputFailure, 0, 0)
+	}
+	return sent == 1
+}
+
+func keyboardHook(code int32, wParam uintptr, event *keyboardEvent) uintptr {
+	if code == 0 {
+		injected := event.Flags&0x10 != 0 || uint64(event.Extra) == wininput.Marker
+		down := event.Flags&0x80 == 0
+		if app.engine.Handle(event.Key, down, injected, emit) {
+			return 1
+		}
+	}
+	result, _, _ := nextHook.Call(app.hook, uintptr(code), wParam, uintptr(unsafe.Pointer(event)))
+	return result
+}
+
+func mappedKeyIsDown() bool {
+	for _, key := range []uintptr{0xA4, 0xA5, 0x5B, 0x5C, 0x08, 0xDC, 0x14, 0xA2, 0xA3} {
+		state, _, _ := getAsyncKeyState.Call(key)
+		if state&0x8000 != 0 {
+			return true
+		}
+	}
+	return false
+}
+
+func pauseMapping() bool {
+	clean := app.engine.Pause(emit)
+	setLabel(app.pauseButton, "다시 적용")
+	if clean {
+		setLabel(app.status, "일시정지 — 원래 Windows 키 배열 사용 중")
+	} else {
+		setLabel(app.status, "키 해제 실패 — 모든 키를 떼고 다시 시도하세요.")
+	}
+	return clean
+}
+
+func toggleMapping() {
+	if app.engine.Enabled() {
+		pauseMapping()
+		return
+	}
+	if !app.engine.Pause(emit) || mappedKeyIsDown() {
+		setLabel(app.status, "Ctrl·CapsLock·Alt·Win·Backspace·역슬래시 키를 떼어 주세요.")
+		return
+	}
+	app.failed = false
+	app.engine.Resume()
+	setLabel(app.status, "적용 중 — Windows 전체 키보드에 적용")
+	setLabel(app.pauseButton, "일시정지")
+}
+
+func stopMapping() {
+	if !pauseMapping() {
+		alert("출력 키 해제에 실패했습니다. 모든 키를 떼고 종료를 다시 눌러 주세요.")
+		return
+	}
+	if app.hook != 0 {
+		unhook.Call(app.hook)
+		app.hook = 0
+	}
+	destroyWindow.Call(app.window)
+}
+
+func windowProcedure(window uintptr, id uint32, wParam uintptr, lParam uintptr) uintptr {
+	switch id {
+	case wmCommand:
+		switch wParam & 0xFFFF {
+		case pauseButtonID:
+			toggleMapping()
+			return 0
+		case exitButtonID:
+			stopMapping()
+			return 0
+		}
+	case wmInputFailure:
+		pauseMapping()
+		setLabel(app.status, "입력 전송 실패로 일시정지 — 대상 앱의 권한 확인 필요")
+		return 0
+	case wmClose:
+		stopMapping()
+		return 0
+	case wmDestroy:
+		postQuit.Call(0)
+		return 0
+	}
+	result, _, _ := defaultWindowProc.Call(window, uintptr(id), wParam, lParam)
+	return result
+}
+
+func addControl(class string, text string, x uintptr, y uintptr, width uintptr, height uintptr, id uintptr) uintptr {
+	style := uintptr(0x50000000)
+	if class == "BUTTON" {
+		style |= 0x00010000
+	}
+	control, _, _ := createWindow.Call(
+		0,
+		uintptr(unsafe.Pointer(wide(class))),
+		uintptr(unsafe.Pointer(wide(text))),
+		style,
+		x, y, width, height,
+		app.window, id, 0, 0,
+	)
+	font, _, _ := getStockObject.Call(17)
+	sendMessage.Call(control, 0x0030, font, 1)
+	return control
+}
+
+func main() {
+	runtime.LockOSThread()
+	defer runtime.UnlockOSThread()
+	mutex, _, mutexError := createMutex.Call(0, 0, uintptr(unsafe.Pointer(wide("Local\\KaymapPortable"))))
+	if mutex == 0 {
+		alert("프로그램 실행 상태를 확인할 수 없습니다.")
+		return
+	}
+	defer closeHandle.Call(mutex)
+	if mutexError == syscall.Errno(183) {
+		alert("Kaymap이 이미 실행 중입니다. 기존 창을 사용하세요.")
+		return
+	}
+	app.engine = remap.New()
+	instance, _, _ := getModuleHandle.Call(0)
+	cursor, _, _ := loadCursor.Call(0, 32512)
+	class := windowClass{
+		Procedure:  syscall.NewCallback(windowProcedure),
+		Instance:   instance,
+		Cursor:     cursor,
+		Background: 16,
+		ClassName:  wide("KaymapPortableWindow"),
+	}
+	class.Size = uint32(unsafe.Sizeof(class))
+	registered, _, _ := registerClass.Call(uintptr(unsafe.Pointer(&class)))
+	if registered == 0 {
+		alert("사용 화면 생성에 실패했습니다.")
+		return
+	}
+	app.window, _, _ = createWindow.Call(
+		0,
+		uintptr(unsafe.Pointer(class.ClassName)),
+		uintptr(unsafe.Pointer(wide("Kaymap — CapsLock ↔ Ctrl"))),
+		0x00CA0000,
+		0x80000000, 0x80000000, 560, 310,
+		0, 0, instance, 0,
+	)
+	if app.window == 0 {
+		alert("사용 화면 생성에 실패했습니다.")
+		return
+	}
+	app.status = addControl("STATIC", "적용 중 — Windows 전체 키보드에 적용", 20, 20, 510, 30, 0)
+	addControl("STATIC", "Alt → Mac Command     Win → Mac Option\r\nCapsLock → Mac Control     좌우 Ctrl → CapsLock\r\n역슬래시(\\) ↔ Backspace\r\n\r\nParsec: Command·Ctrl 교환 Off / Keyboard Immersive Mode On\r\n종료 버튼 또는 창 닫기로 키 매핑 해제", 20, 60, 510, 130, 0)
+	app.pauseButton = addControl("BUTTON", "일시정지", 20, 210, 160, 35, pauseButtonID)
+	addControl("BUTTON", "종료", 195, 210, 160, 35, exitButtonID)
+	if mappedKeyIsDown() {
+		pauseMapping()
+	}
+	app.hook, _, _ = setHook.Call(13, syscall.NewCallback(keyboardHook), instance, 0)
+	if app.hook == 0 {
+		alert("키보드 Hook 설치에 실패했습니다. 이 PC의 실행 제한을 확인하세요.")
+		return
+	}
+	defer func() {
+		if app.hook != 0 {
+			unhook.Call(app.hook)
+		}
+	}()
+	showWindow.Call(app.window, 1)
+	var event message
+	for {
+		result, _, _ := getMessage.Call(uintptr(unsafe.Pointer(&event)), 0, 0, 0)
+		if int32(result) <= 0 {
+			break
+		}
+		translateMessage.Call(uintptr(unsafe.Pointer(&event)))
+		dispatchMessage.Call(uintptr(unsafe.Pointer(&event)))
+	}
+	app.engine.Pause(emit)
+}
