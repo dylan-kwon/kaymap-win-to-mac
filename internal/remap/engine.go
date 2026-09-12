@@ -9,20 +9,22 @@ type Output struct {
 type Sender func(Output) bool
 
 type Engine struct {
-	enabled  bool
-	held     map[uint32]uint32
-	physical map[uint32]bool
-	swallow  map[uint32]bool
-	bypass   map[uint32]bool
+	enabled     bool
+	hhkbEnabled bool
+	held        map[uint32]uint32
+	physical    map[uint32]bool
+	swallow     map[uint32]bool
+	bypass      map[uint32]bool
 }
 
 func New() *Engine {
 	return &Engine{
-		enabled:  true,
-		held:     make(map[uint32]uint32),
-		physical: make(map[uint32]bool),
-		swallow:  make(map[uint32]bool),
-		bypass:   make(map[uint32]bool),
+		enabled:     true,
+		hhkbEnabled: true,
+		held:        make(map[uint32]uint32),
+		physical:    make(map[uint32]bool),
+		swallow:     make(map[uint32]bool),
+		bypass:      make(map[uint32]bool),
 	}
 }
 
@@ -49,6 +51,29 @@ func Target(key uint32) (uint32, bool) {
 	}
 }
 
+func (e *Engine) Target(key uint32) (uint32, bool) {
+	if !e.hhkbEnabled && (key == 0x14 || key == 0xA2 || key == 0xA3) {
+		return key, false
+	}
+	return Target(key)
+}
+
+func (e *Engine) HHKBEnabled() bool {
+	return e.hhkbEnabled
+}
+
+// SetHHKBEnabled는 키 누름 중의 옵션 전환을 거부하여 원본과 출력의 해제 쌍을 보존한다.
+func (e *Engine) SetHHKBEnabled(enabled bool) bool {
+	if e.hhkbEnabled == enabled {
+		return true
+	}
+	if e.HasHeldInput() {
+		return false
+	}
+	e.hhkbEnabled = enabled
+	return true
+}
+
 func (e *Engine) otherSourceHolds(key uint32, target uint32) bool {
 	for source, heldTarget := range e.held {
 		if source != key && heldTarget == target {
@@ -64,10 +89,11 @@ func (e *Engine) Handle(key uint32, down bool, injected bool, send Sender) bool 
 	if injected {
 		return false
 	}
-	target, mapped := Target(key)
-	if !mapped {
+	_, candidate := Target(key)
+	if !candidate {
 		return false
 	}
+	target, mapped := e.Target(key)
 	if down {
 		e.physical[key] = true
 		if e.swallow[key] {
@@ -76,7 +102,7 @@ func (e *Engine) Handle(key uint32, down bool, injected bool, send Sender) bool 
 		if e.bypass[key] {
 			return false
 		}
-		if !e.enabled {
+		if !e.enabled || !mapped {
 			e.bypass[key] = true
 			return false
 		}

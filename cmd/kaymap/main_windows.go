@@ -28,6 +28,7 @@ var (
 	getMessage        = user32.NewProc("GetMessageW")
 	translateMessage  = user32.NewProc("TranslateMessage")
 	dispatchMessage   = user32.NewProc("DispatchMessageW")
+	isDialogMessage   = user32.NewProc("IsDialogMessageW")
 	postMessage       = user32.NewProc("PostMessageW")
 	postQuit          = user32.NewProc("PostQuitMessage")
 	destroyWindow     = user32.NewProc("DestroyWindow")
@@ -54,6 +55,9 @@ const (
 	pauseButtonID   = 101
 	exitButtonID    = 102
 	refreshButtonID = 103
+	hhkbCheckboxID  = 104
+	bmGetCheck      = 0x00F0
+	bmSetCheck      = 0x00F1
 	wmTimer         = 0x0113
 )
 
@@ -96,6 +100,8 @@ type application struct {
 	window          uintptr
 	status          uintptr
 	pauseButton     uintptr
+	hhkbCheckbox    uintptr
+	hhkbInfo        uintptr
 	hook            uintptr
 	failed          bool
 	instance        uintptr
@@ -146,7 +152,7 @@ func keyboardHook(code int32, wParam uintptr, event *keyboardEvent) uintptr {
 		}
 		blocked := app.engine.Handle(event.Key, down, injected, emit)
 		if !injected && down {
-			target, _ := remap.Target(event.Key)
+			target, _ := app.engine.Target(event.Key)
 			app.diagnostic.Record(event.Key, target, app.attempted, app.sent)
 		}
 		if blocked {
@@ -231,6 +237,34 @@ func toggleMapping() {
 	setLabel(app.pauseButton, "일시정지")
 }
 
+func updateHHKBControls() {
+	checked := uintptr(0)
+	text := "Ctrl → Ctrl / CapsLock → CapsLock (원본 입력 유지)"
+	if app.engine.HHKBEnabled() {
+		checked = 1
+		text = "CapsLock → Left Ctrl / 좌우 Ctrl → CapsLock"
+	}
+	sendMessage.Call(app.hhkbCheckbox, bmSetCheck, checked, 0)
+	setLabel(app.hhkbInfo, text)
+}
+
+func toggleHHKB() {
+	checked, _, _ := sendMessage.Call(app.hhkbCheckbox, bmGetCheck, 0, 0)
+	if mappedKeyIsDown() || !app.engine.SetHHKBEnabled(checked == 1) {
+		updateHHKBControls()
+		setLabel(app.status, "키를 모두 뗀 뒤 HHKB 옵션을 변경하세요.")
+		return
+	}
+	updateHHKBControls()
+	app.diagnostic = capture.Diagnostic{}
+	app.diagnosticText = ""
+	if app.engine.Enabled() {
+		setLabel(app.status, "적용 중 — HHKB 옵션 변경 완료")
+	} else {
+		setLabel(app.status, "일시정지 — HHKB 옵션 변경 완료")
+	}
+}
+
 func stopMapping() {
 	if !pauseMapping() {
 		alert("출력 키 해제에 실패했습니다. 모든 키를 떼고 종료를 다시 눌러 주세요.")
@@ -258,6 +292,11 @@ func windowProcedure(window uintptr, id uint32, wParam uintptr, lParam uintptr) 
 			app.refresh.Request(time.Now().Add(2 * time.Second))
 			setLabel(app.status, "입력 연결 예약 — 적용 중인 상태로 사용할 창을 클릭하세요.")
 			return 0
+		case hhkbCheckboxID:
+			if (wParam>>16)&0xFFFF == 0 {
+				toggleHHKB()
+			}
+			return 0
 		}
 	case wmTimer:
 		tickInput()
@@ -281,6 +320,9 @@ func addControl(class string, text string, x uintptr, y uintptr, width uintptr, 
 	style := uintptr(0x50000000)
 	if class == "BUTTON" {
 		style |= 0x00010000
+		if id == hhkbCheckboxID {
+			style |= 0x00000003
+		}
 	}
 	control, _, _ := createWindow.Call(
 		0,
@@ -329,9 +371,9 @@ func main() {
 	app.window, _, _ = createWindow.Call(
 		0,
 		uintptr(unsafe.Pointer(class.ClassName)),
-		uintptr(unsafe.Pointer(wide("Kaymap 0.2 — 입력 진단"))),
+		uintptr(unsafe.Pointer(wide("Kaymap 0.3 — HHKB 옵션"))),
 		0x00CA0000,
-		0x80000000, 0x80000000, 660, 380,
+		0x80000000, 0x80000000, 660, 420,
 		0, 0, instance, 0,
 	)
 	if app.window == 0 {
@@ -339,12 +381,15 @@ func main() {
 		return
 	}
 	app.status = addControl("STATIC", "적용 중 — Windows 전체 키보드에 적용", 20, 20, 610, 30, 0)
-	addControl("STATIC", "Alt ↔ Win\r\nCapsLock → Left Ctrl     좌우 Ctrl → CapsLock\r\n역슬래시(\\) ↔ Backspace\r\n\r\n실행 중 Windows 전체 키보드에 적용\r\n종료 버튼 또는 창 닫기로 키 매핑 해제", 20, 60, 510, 130, 0)
-	app.diagnosticLabel = addControl("STATIC", app.diagnostic.Text(), 20, 200, 610, 30, 0)
-	addControl("STATIC", "Windows 전송 성공은 대상 앱의 수신 확인과 별개입니다.", 20, 235, 610, 25, 0)
-	app.pauseButton = addControl("BUTTON", "일시정지", 20, 280, 150, 35, pauseButtonID)
-	addControl("BUTTON", "입력 다시 연결", 185, 280, 180, 35, refreshButtonID)
-	addControl("BUTTON", "종료", 380, 280, 150, 35, exitButtonID)
+	addControl("STATIC", "Alt ↔ Win / 역슬래시(\\) ↔ Backspace\r\n\r\n실행 중 Windows 전체 키보드에 적용\r\n종료 버튼 또는 창 닫기로 키 매핑 해제", 20, 60, 610, 95, 0)
+	app.hhkbCheckbox = addControl("BUTTON", "HHKB 모드 — CapsLock ↔ Ctrl", 20, 160, 610, 28, hhkbCheckboxID)
+	app.hhkbInfo = addControl("STATIC", "", 40, 192, 590, 30, 0)
+	updateHHKBControls()
+	app.diagnosticLabel = addControl("STATIC", app.diagnostic.Text(), 20, 230, 610, 30, 0)
+	addControl("STATIC", "Windows 전송 성공은 대상 앱의 수신 확인과 별개입니다.", 20, 265, 610, 25, 0)
+	app.pauseButton = addControl("BUTTON", "일시정지", 20, 310, 150, 35, pauseButtonID)
+	addControl("BUTTON", "입력 다시 연결", 185, 310, 180, 35, refreshButtonID)
+	addControl("BUTTON", "종료", 380, 310, 150, 35, exitButtonID)
 	if mappedKeyIsDown() {
 		pauseMapping()
 	}
@@ -368,6 +413,10 @@ func main() {
 		result, _, _ := getMessage.Call(uintptr(unsafe.Pointer(&event)), 0, 0, 0)
 		if int32(result) <= 0 {
 			break
+		}
+		handled, _, _ := isDialogMessage.Call(app.window, uintptr(unsafe.Pointer(&event)))
+		if handled != 0 {
+			continue
 		}
 		translateMessage.Call(uintptr(unsafe.Pointer(&event)))
 		dispatchMessage.Call(uintptr(unsafe.Pointer(&event)))

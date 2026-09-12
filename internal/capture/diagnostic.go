@@ -31,6 +31,9 @@ func (d *Diagnostic) Text() string {
 		return "입력 대기 — 사용 중인 창에서 Win 키를 눌러 보세요."
 	}
 	state := "출력 전송 없음"
+	if !d.attempted && d.source == d.target {
+		state = "원본 입력 유지"
+	}
 	if d.attempted {
 		state = "Windows 전송 실패"
 		if d.sent {

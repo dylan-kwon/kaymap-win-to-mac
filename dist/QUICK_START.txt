@@ -1,12 +1,16 @@
 Kaymap — Windows 포터블 키 매핑
 
-- Windows 10/11 x64용 시험 버전 0.2
+- Windows 10/11 x64용 시험 버전 0.3 — HHKB 모드 체크박스
 - 설치·재부팅 불필요, kaymap-windows-x64.exe 실행
 - 기존 Kaymap 종료 후 모든 키를 뗀 상태에서 새 EXE 실행
 - 적용 중 표시 확인 후 사용할 창 클릭
-- Alt ↔ Win, CapsLock → Left Ctrl, 좌우 Ctrl → CapsLock
+- Alt ↔ Win
+- HHKB 모드 체크박스 기본 활성화: CapsLock → Left Ctrl, 좌우 Ctrl → CapsLock
+- HHKB 모드 해제: Ctrl → Ctrl, CapsLock → CapsLock
+- 비활성화 시 원격 프로그램이 Control을 그대로 전달하면 macOS Control로 입력
+- 매핑 대상 키를 모두 뗀 뒤 옵션 변경, 재실행하면 기본 활성화
 - 역슬래시(\) ↔ Backspace 교환, US ANSI 배열 기준
-- Ctrl+C 입력: 물리 CapsLock+C 사용
+- Ctrl+C 입력: HHKB 활성화 시 물리 CapsLock+C, 비활성화 시 Ctrl+C 사용
 - Windows 전체 키보드에 적용, 일시정지·종료로 원래 배열 복구
 - 파일이 초기화된 경우 다음 사용 시 EXE만 다시 복사하여 실행
 

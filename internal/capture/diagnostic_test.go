@@ -45,3 +45,11 @@ func TestDiagnosticStartsWithNoInput(t *testing.T) {
 		t.Fatal("missing initial capture status")
 	}
 }
+
+func TestDiagnosticShowsUnmodifiedControlWithoutSendFailure(t *testing.T) {
+	var report Diagnostic
+	report.Record(0xA2, 0xA2, false, false)
+	if !strings.Contains(report.Text(), "Ctrl(L) → Ctrl(L) / 원본 입력 유지") {
+		t.Fatalf("unmodified Control diagnosis = %s", report.Text())
+	}
+}
