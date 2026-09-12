@@ -239,10 +239,10 @@ func toggleMapping() {
 
 func updateHHKBControls() {
 	checked := uintptr(0)
-	text := "Ctrl → Ctrl / CapsLock → CapsLock (원본 입력 유지)"
+	text := "Ctrl·CapsLock 원본 입력 유지\r\nBackspace·역슬래시(\\) 원본 입력 유지"
 	if app.engine.HHKBEnabled() {
 		checked = 1
-		text = "CapsLock → Left Ctrl / 좌우 Ctrl → CapsLock"
+		text = "CapsLock → Left Ctrl / 좌우 Ctrl → CapsLock\r\nBackspace ↔ 역슬래시(\\) 교환"
 	}
 	sendMessage.Call(app.hhkbCheckbox, bmSetCheck, checked, 0)
 	setLabel(app.hhkbInfo, text)
@@ -371,9 +371,9 @@ func main() {
 	app.window, _, _ = createWindow.Call(
 		0,
 		uintptr(unsafe.Pointer(class.ClassName)),
-		uintptr(unsafe.Pointer(wide("Kaymap 0.3 — HHKB 옵션"))),
+		uintptr(unsafe.Pointer(wide("Kaymap 0.4 — HHKB 옵션"))),
 		0x00CA0000,
-		0x80000000, 0x80000000, 660, 420,
+		0x80000000, 0x80000000, 660, 450,
 		0, 0, instance, 0,
 	)
 	if app.window == 0 {
@@ -381,15 +381,15 @@ func main() {
 		return
 	}
 	app.status = addControl("STATIC", "적용 중 — Windows 전체 키보드에 적용", 20, 20, 610, 30, 0)
-	addControl("STATIC", "Alt ↔ Win / 역슬래시(\\) ↔ Backspace\r\n\r\n실행 중 Windows 전체 키보드에 적용\r\n종료 버튼 또는 창 닫기로 키 매핑 해제", 20, 60, 610, 95, 0)
-	app.hhkbCheckbox = addControl("BUTTON", "HHKB 모드 — CapsLock ↔ Ctrl", 20, 160, 610, 28, hhkbCheckboxID)
-	app.hhkbInfo = addControl("STATIC", "", 40, 192, 590, 30, 0)
+	addControl("STATIC", "기본 매핑: Alt ↔ Win (HHKB 모드와 무관하게 적용)\r\n\r\n실행 중 Windows 전체 키보드에 적용\r\n종료 버튼 또는 창 닫기로 키 매핑 해제", 20, 60, 610, 95, 0)
+	app.hhkbCheckbox = addControl("BUTTON", "HHKB 모드 — CapsLock ↔ Ctrl, Backspace ↔ \\", 20, 160, 610, 28, hhkbCheckboxID)
+	app.hhkbInfo = addControl("STATIC", "", 40, 192, 590, 55, 0)
 	updateHHKBControls()
-	app.diagnosticLabel = addControl("STATIC", app.diagnostic.Text(), 20, 230, 610, 30, 0)
-	addControl("STATIC", "Windows 전송 성공은 대상 앱의 수신 확인과 별개입니다.", 20, 265, 610, 25, 0)
-	app.pauseButton = addControl("BUTTON", "일시정지", 20, 310, 150, 35, pauseButtonID)
-	addControl("BUTTON", "입력 다시 연결", 185, 310, 180, 35, refreshButtonID)
-	addControl("BUTTON", "종료", 380, 310, 150, 35, exitButtonID)
+	app.diagnosticLabel = addControl("STATIC", app.diagnostic.Text(), 20, 260, 610, 30, 0)
+	addControl("STATIC", "Windows 전송 성공은 대상 앱의 수신 확인과 별개입니다.", 20, 295, 610, 25, 0)
+	app.pauseButton = addControl("BUTTON", "일시정지", 20, 340, 150, 35, pauseButtonID)
+	addControl("BUTTON", "입력 다시 연결", 185, 340, 180, 35, refreshButtonID)
+	addControl("BUTTON", "종료", 380, 340, 150, 35, exitButtonID)
 	if mappedKeyIsDown() {
 		pauseMapping()
 	}

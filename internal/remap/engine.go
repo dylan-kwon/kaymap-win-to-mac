@@ -52,8 +52,11 @@ func Target(key uint32) (uint32, bool) {
 }
 
 func (e *Engine) Target(key uint32) (uint32, bool) {
-	if !e.hhkbEnabled && (key == 0x14 || key == 0xA2 || key == 0xA3) {
-		return key, false
+	if !e.hhkbEnabled {
+		switch key {
+		case 0x14, 0xA2, 0xA3, 0xDC, 0x08:
+			return key, false
+		}
 	}
 	return Target(key)
 }

@@ -8,17 +8,17 @@ import (
 func TestHHKBModeIsEnabledByDefault(t *testing.T) {
 	engine := New()
 	if !engine.HHKBEnabled() {
-		t.Fatal("existing CapsLock/Control behavior must remain the default")
+		t.Fatal("existing HHKB swaps must remain the default")
 	}
 }
 
-func TestDisablingHHKBPassesCapsLockAndBothControlsThrough(t *testing.T) {
+func TestDisablingHHKBPassesAllHHKBKeysThrough(t *testing.T) {
 	engine := New()
 	sink := &recorder{}
 	if !engine.SetHHKBEnabled(false) {
 		t.Fatal("could not disable idle HHKB mode")
 	}
-	for _, key := range []uint32{0x14, 0xA2, 0xA3} {
+	for _, key := range []uint32{0x14, 0xA2, 0xA3, 0xDC, 0x08} {
 		target, mapped := engine.Target(key)
 		if target != key || mapped {
 			t.Fatalf("key %x must retain its original identity", key)
@@ -46,8 +46,6 @@ func TestOtherSwapsRemainEnabledWithoutHHKBMode(t *testing.T) {
 		{0xA5, 0x5C},
 		{0x5B, 0xA4},
 		{0x5C, 0xA5},
-		{0xDC, 0x08},
-		{0x08, 0xDC},
 	}
 	var want []Output
 	for _, item := range cases {
@@ -81,24 +79,49 @@ func TestHHKBModeCanBeEnabledAgain(t *testing.T) {
 	}
 }
 
+func TestHHKBBackspaceSwapsRecoverWithRepeatedInput(t *testing.T) {
+	for _, key := range []uint32{0xDC, 0x08} {
+		engine := New()
+		engine.SetHHKBEnabled(false)
+		engine.SetHHKBEnabled(true)
+		sink := &recorder{}
+		target, _ := Target(key)
+		for _, down := range []bool{true, true, false} {
+			if !engine.Handle(key, down, false, sink.send) {
+				t.Fatalf("HHKB key %x was not suppressed after re-enabling", key)
+			}
+		}
+		want := []Output{
+			{Key: target, Down: true},
+			{Key: target, Down: true},
+			{Key: target, Down: false},
+		}
+		if !reflect.DeepEqual(sink.events, want) || engine.HasHeldInput() {
+			t.Fatalf("HHKB key %x repeat/release mismatch: %v", key, sink.events)
+		}
+	}
+}
+
 func TestHHKBChangeWaitsForHeldStrokeToFinish(t *testing.T) {
 	for _, initiallyEnabled := range []bool{true, false} {
-		engine := New()
-		engine.SetHHKBEnabled(initiallyEnabled)
-		sink := &recorder{}
-		engine.Handle(0xA2, true, false, sink.send)
-		if engine.SetHHKBEnabled(!initiallyEnabled) {
-			t.Fatal("changed mapping halfway through a Control stroke")
-		}
-		if engine.HHKBEnabled() != initiallyEnabled {
-			t.Fatal("rejected change still modified the setting")
-		}
-		blocked := engine.Handle(0xA2, false, false, sink.send)
-		if blocked != initiallyEnabled {
-			t.Fatal("key-up no longer matched key-down handling")
-		}
-		if !engine.SetHHKBEnabled(!initiallyEnabled) {
-			t.Fatal("setting stayed blocked after key release")
+		for _, key := range []uint32{0x14, 0xA2, 0xA3, 0xDC, 0x08} {
+			engine := New()
+			engine.SetHHKBEnabled(initiallyEnabled)
+			sink := &recorder{}
+			engine.Handle(key, true, false, sink.send)
+			if engine.SetHHKBEnabled(!initiallyEnabled) {
+				t.Fatalf("changed mapping halfway through key %x stroke", key)
+			}
+			if engine.HHKBEnabled() != initiallyEnabled {
+				t.Fatal("rejected change still modified the setting")
+			}
+			blocked := engine.Handle(key, false, false, sink.send)
+			if blocked != initiallyEnabled {
+				t.Fatal("key-up no longer matched key-down handling")
+			}
+			if !engine.SetHHKBEnabled(!initiallyEnabled) {
+				t.Fatal("setting stayed blocked after key release")
+			}
 		}
 	}
 }
