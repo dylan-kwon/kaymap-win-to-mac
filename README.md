@@ -15,7 +15,7 @@
 1. Windows PC로 EXE 복사
 2. 기존 Kaymap이 실행 중이면 종료
 3. 모든 키를 뗀 상태에서 `kaymap-windows-x64.exe` 실행
-4. `HHKB 모드 — CapsLock ↔ Ctrl, Backspace ↔ \` 체크 여부 선택, 기본값 활성화
+4. `HHKB 모드` 체크 여부 선택, 기본값 활성화
 5. `적용 중` 표시 확인 후 사용할 창 클릭
 6. 사용 종료 시 `종료` 버튼 클릭 또는 Kaymap 창 닫기
 

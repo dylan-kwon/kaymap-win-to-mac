@@ -382,7 +382,7 @@ func main() {
 	}
 	app.status = addControl("STATIC", "적용 중 — Windows 전체 키보드에 적용", 20, 20, 610, 30, 0)
 	addControl("STATIC", "기본 매핑: Alt ↔ Win (HHKB 모드와 무관하게 적용)\r\n\r\n실행 중 Windows 전체 키보드에 적용\r\n종료 버튼 또는 창 닫기로 키 매핑 해제", 20, 60, 610, 95, 0)
-	app.hhkbCheckbox = addControl("BUTTON", "HHKB 모드 — CapsLock ↔ Ctrl, Backspace ↔ \\", 20, 160, 610, 28, hhkbCheckboxID)
+	app.hhkbCheckbox = addControl("BUTTON", "HHKB 모드", 20, 160, 610, 28, hhkbCheckboxID)
 	app.hhkbInfo = addControl("STATIC", "", 40, 192, 590, 55, 0)
 	updateHHKBControls()
 	app.diagnosticLabel = addControl("STATIC", app.diagnostic.Text(), 20, 260, 610, 30, 0)
