@@ -5,8 +5,10 @@ package main
 import (
 	"runtime"
 	"syscall"
+	"time"
 	"unsafe"
 
+	"kaymap/internal/capture"
 	"kaymap/internal/remap"
 	"kaymap/internal/wininput"
 )
@@ -32,6 +34,9 @@ var (
 	setText           = user32.NewProc("SetWindowTextW")
 	sendMessage       = user32.NewProc("SendMessageW")
 	getAsyncKeyState  = user32.NewProc("GetAsyncKeyState")
+	getForeground     = user32.NewProc("GetForegroundWindow")
+	setTimer          = user32.NewProc("SetTimer")
+	killTimer         = user32.NewProc("KillTimer")
 	messageBox        = user32.NewProc("MessageBoxW")
 	loadCursor        = user32.NewProc("LoadCursorW")
 	getModuleHandle   = kernel32.NewProc("GetModuleHandleW")
@@ -42,12 +47,14 @@ var (
 )
 
 const (
-	wmClose        = 0x0010
-	wmDestroy      = 0x0002
-	wmCommand      = 0x0111
-	wmInputFailure = 0x8001
-	pauseButtonID  = 101
-	exitButtonID   = 102
+	wmClose         = 0x0010
+	wmDestroy       = 0x0002
+	wmCommand       = 0x0111
+	wmInputFailure  = 0x8001
+	pauseButtonID   = 101
+	exitButtonID    = 102
+	refreshButtonID = 103
+	wmTimer         = 0x0113
 )
 
 type windowClass struct {
@@ -85,12 +92,20 @@ type keyboardEvent struct {
 }
 
 type application struct {
-	engine      *remap.Engine
-	window      uintptr
-	status      uintptr
-	pauseButton uintptr
-	hook        uintptr
-	failed      bool
+	engine          *remap.Engine
+	window          uintptr
+	status          uintptr
+	pauseButton     uintptr
+	hook            uintptr
+	failed          bool
+	instance        uintptr
+	hookCallback    uintptr
+	refresh         capture.RefreshPlan
+	diagnostic      capture.Diagnostic
+	diagnosticLabel uintptr
+	diagnosticText  string
+	attempted       bool
+	sent            bool
 }
 
 func wide(text string) *uint16 {
@@ -106,11 +121,13 @@ func alert(text string) {
 }
 
 func emit(event remap.Output) bool {
+	app.attempted = true
 	packet, ok := wininput.Encode(event.Key, event.Down)
 	if !ok {
 		return false
 	}
 	sent, _, _ := sendInput.Call(1, uintptr(unsafe.Pointer(&packet[0])), uintptr(len(packet)))
+	app.sent = sent == 1
 	runtime.KeepAlive(packet)
 	if sent != 1 && !app.failed {
 		app.failed = true
@@ -123,12 +140,58 @@ func keyboardHook(code int32, wParam uintptr, event *keyboardEvent) uintptr {
 	if code == 0 {
 		injected := event.Flags&0x10 != 0 || uint64(event.Extra) == wininput.Marker
 		down := event.Flags&0x80 == 0
-		if app.engine.Handle(event.Key, down, injected, emit) {
+		if !injected {
+			app.attempted = false
+			app.sent = false
+		}
+		blocked := app.engine.Handle(event.Key, down, injected, emit)
+		if !injected && down {
+			target, _ := remap.Target(event.Key)
+			app.diagnostic.Record(event.Key, target, app.attempted, app.sent)
+		}
+		if blocked {
 			return 1
 		}
 	}
 	result, _, _ := nextHook.Call(app.hook, uintptr(code), wParam, uintptr(unsafe.Pointer(event)))
 	return result
+}
+
+func reconnectInput() bool {
+	if !app.engine.Pause(emit) {
+		setLabel(app.status, "입력 연결 실패 — 눌린 출력 키 해제 실패")
+		setLabel(app.pauseButton, "다시 적용")
+		return false
+	}
+	newHook, _, _ := setHook.Call(13, app.hookCallback, app.instance, 0)
+	if newHook == 0 {
+		setLabel(app.status, "입력 연결 실패 — 일시정지됨")
+		setLabel(app.pauseButton, "다시 적용")
+		return false
+	}
+	if app.hook != 0 {
+		removed, _, _ := unhook.Call(app.hook)
+		if removed == 0 {
+			// Windows가 시간 초과로 기존 Hook을 제거했을 수도 있으므로 새 연결 유지.
+			setLabel(app.status, "기존 입력 연결 확인 실패 — 새 연결로 적용 중")
+		}
+	}
+	app.hook = newHook
+	app.engine.Resume()
+	setLabel(app.pauseButton, "일시정지")
+	setLabel(app.status, "적용 중 — 입력 연결 갱신 완료")
+	return true
+}
+
+func tickInput() {
+	window, _, _ := getForeground.Call()
+	ready := app.engine.Enabled() && !app.engine.HasHeldInput() && !mappedKeyIsDown()
+	app.refresh.Tick(window, time.Now(), ready, reconnectInput)
+	text := app.diagnostic.Text()
+	if text != app.diagnosticText {
+		setLabel(app.diagnosticLabel, text)
+		app.diagnosticText = text
+	}
 }
 
 func mappedKeyIsDown() bool {
@@ -158,11 +221,12 @@ func toggleMapping() {
 		return
 	}
 	if !app.engine.Pause(emit) || mappedKeyIsDown() {
-		setLabel(app.status, "Ctrl·CapsLock·Alt·Win·Backspace·역슬래시 키를 떼어 주세요.")
+		setLabel(app.status, "매핑 대상 키를 모두 떼어 주세요.")
 		return
 	}
 	app.failed = false
 	app.engine.Resume()
+	app.refresh.Request(time.Now().Add(500 * time.Millisecond))
 	setLabel(app.status, "적용 중 — Windows 전체 키보드에 적용")
 	setLabel(app.pauseButton, "일시정지")
 }
@@ -176,6 +240,7 @@ func stopMapping() {
 		unhook.Call(app.hook)
 		app.hook = 0
 	}
+	killTimer.Call(app.window, 1)
 	destroyWindow.Call(app.window)
 }
 
@@ -189,7 +254,14 @@ func windowProcedure(window uintptr, id uint32, wParam uintptr, lParam uintptr) 
 		case exitButtonID:
 			stopMapping()
 			return 0
+		case refreshButtonID:
+			app.refresh.Request(time.Now().Add(2 * time.Second))
+			setLabel(app.status, "입력 연결 예약 — 적용 중인 상태로 Parsec 창을 클릭하세요.")
+			return 0
 		}
+	case wmTimer:
+		tickInput()
+		return 0
 	case wmInputFailure:
 		pauseMapping()
 		setLabel(app.status, "입력 전송 실패로 일시정지 — 대상 앱의 권한 확인 필요")
@@ -238,6 +310,8 @@ func main() {
 	}
 	app.engine = remap.New()
 	instance, _, _ := getModuleHandle.Call(0)
+	app.instance = instance
+	app.hookCallback = syscall.NewCallback(keyboardHook)
 	cursor, _, _ := loadCursor.Call(0, 32512)
 	class := windowClass{
 		Procedure:  syscall.NewCallback(windowProcedure),
@@ -255,23 +329,26 @@ func main() {
 	app.window, _, _ = createWindow.Call(
 		0,
 		uintptr(unsafe.Pointer(class.ClassName)),
-		uintptr(unsafe.Pointer(wide("Kaymap — CapsLock ↔ Ctrl"))),
+		uintptr(unsafe.Pointer(wide("Kaymap 0.2 — 입력 진단"))),
 		0x00CA0000,
-		0x80000000, 0x80000000, 560, 310,
+		0x80000000, 0x80000000, 660, 380,
 		0, 0, instance, 0,
 	)
 	if app.window == 0 {
 		alert("사용 화면 생성에 실패했습니다.")
 		return
 	}
-	app.status = addControl("STATIC", "적용 중 — Windows 전체 키보드에 적용", 20, 20, 510, 30, 0)
+	app.status = addControl("STATIC", "적용 중 — Windows 전체 키보드에 적용", 20, 20, 610, 30, 0)
 	addControl("STATIC", "Alt → Mac Command     Win → Mac Option\r\nCapsLock → Mac Control     좌우 Ctrl → CapsLock\r\n역슬래시(\\) ↔ Backspace\r\n\r\nParsec: Command·Ctrl 교환 Off / Keyboard Immersive Mode On\r\n종료 버튼 또는 창 닫기로 키 매핑 해제", 20, 60, 510, 130, 0)
-	app.pauseButton = addControl("BUTTON", "일시정지", 20, 210, 160, 35, pauseButtonID)
-	addControl("BUTTON", "종료", 195, 210, 160, 35, exitButtonID)
+	app.diagnosticLabel = addControl("STATIC", app.diagnostic.Text(), 20, 200, 610, 30, 0)
+	addControl("STATIC", "Windows 전송 성공은 Mac 수신 확인이 아닙니다.", 20, 235, 610, 25, 0)
+	app.pauseButton = addControl("BUTTON", "일시정지", 20, 280, 150, 35, pauseButtonID)
+	addControl("BUTTON", "입력 다시 연결", 185, 280, 180, 35, refreshButtonID)
+	addControl("BUTTON", "종료", 380, 280, 150, 35, exitButtonID)
 	if mappedKeyIsDown() {
 		pauseMapping()
 	}
-	app.hook, _, _ = setHook.Call(13, syscall.NewCallback(keyboardHook), instance, 0)
+	app.hook, _, _ = setHook.Call(13, app.hookCallback, instance, 0)
 	if app.hook == 0 {
 		alert("키보드 Hook 설치에 실패했습니다. 이 PC의 실행 제한을 확인하세요.")
 		return
@@ -282,6 +359,10 @@ func main() {
 		}
 	}()
 	showWindow.Call(app.window, 1)
+	timer, _, _ := setTimer.Call(app.window, 1, 100, 0)
+	if timer == 0 {
+		setLabel(app.status, "입력 자동 재연결 실패 — Kaymap 종료 후 다시 실행하세요.")
+	}
 	var event message
 	for {
 		result, _, _ := getMessage.Call(uintptr(unsafe.Pointer(&event)), 0, 0, 0)

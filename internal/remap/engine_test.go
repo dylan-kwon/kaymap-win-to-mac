@@ -213,6 +213,26 @@ func TestUnmatchedKeyUpPassesThrough(t *testing.T) {
 	}
 }
 
+func TestInputReconnectMustWaitForPhysicalAndOutputRelease(t *testing.T) {
+	engine := New()
+	sink := &recorder{}
+	if engine.HasHeldInput() {
+		t.Fatal("new engine should be idle")
+	}
+	engine.Handle(0x5B, true, false, sink.send)
+	if !engine.HasHeldInput() {
+		t.Fatal("reconnect could interrupt a held mapped modifier")
+	}
+	engine.Pause(sink.send)
+	if !engine.HasHeldInput() {
+		t.Fatal("released output still has a physical key held")
+	}
+	engine.Handle(0x5B, false, false, sink.send)
+	if engine.HasHeldInput() {
+		t.Fatal("reconnect remained blocked after physical release")
+	}
+}
+
 func TestFailedDownPassesOriginalStrokeThroughUntilRelease(t *testing.T) {
 	engine := New()
 	sink := &recorder{fail: true}

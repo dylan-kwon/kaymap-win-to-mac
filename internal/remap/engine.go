@@ -147,3 +147,7 @@ func (e *Engine) Resume() {
 func (e *Engine) Enabled() bool {
 	return e.enabled
 }
+
+func (e *Engine) HasHeldInput() bool {
+	return len(e.physical) != 0 || len(e.held) != 0
+}

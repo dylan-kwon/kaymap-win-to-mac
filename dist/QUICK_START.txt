@@ -1,6 +1,6 @@
 Kaymap — 피씨방 Windows에서 Parsec으로 Mac 사용
 
-- Windows 10/11 x64용 시험 버전
+- Windows 10/11 x64용 시험 버전 0.2 — 입력 재연결 및 진단 표시
 - 설치·재부팅 불필요, 압축 해제 후 kaymap-windows-x64.exe 실행
 - Parsec 실행 및 Mac 연결 후 Kaymap 실행 권장
 - Windows Parsec → Settings → Client → Swap Command and Ctrl for MacOS: Off
@@ -10,11 +10,19 @@ Kaymap — 피씨방 Windows에서 Parsec으로 Mac 사용
 - CapsLock → Mac Control, 좌우 Ctrl → CapsLock
 - 적용 중 Control+C 입력: 물리 CapsLock+C 사용
 - 적용 중 Parsec 토글: 물리 CapsLock+Shift+I 사용
-- 이전 Kaymap 종료 후 새 EXE 실행, 창 제목의 CapsLock ↔ Ctrl 표시 확인
+- 이전 Kaymap 종료 후 새 EXE 실행, 창 제목의 Kaymap 0.2 — 입력 진단 표시 확인
 - 역슬래시(\) ↔ Backspace 교환, US ANSI 배열 기준
 - 전체 Windows 키보드에 적용, 일시정지 버튼으로 원래 배열 복구
 - 사용 후 종료 버튼 또는 창 닫기로 해제
 - 다음 방문 시 파일만 다시 복사하여 실행
+
+- Parsec 창으로 전환 후 모든 키를 떼고 1초 대기, 입력 연결 자동 갱신
+- Win+A가 Mac에서 전체 선택되는 경우: 입력 다시 연결 클릭 후 Parsec 창으로 돌아가 2초 이상 대기
+- Win 키를 누른 뒤 마우스로 Kaymap 창으로 돌아와 진단 표시 확인
+- Win(L) → Alt(L) / Windows 전송 성공: 로컬 변환 성공 의미, Mac 수신 성공을 보장하지 않음
+- 입력 번호가 갱신되지 않음: Kaymap에 해당 키 입력이 도달하지 않음
+- Alt(L) → Win(L): Windows가 해당 물리 키를 Alt로 인식하고 있음
+- 기존 버전의 Win+A 문제는 사용자 보고로 확인, 이 버전의 Parsec 개선 여부는 실제 재시험 필요
 
 - 테스트 결과: 키 매핑 로직·입력 패킷 자동 테스트 통과, Windows x64 빌드 완료
 - 미검증: 실제 Windows UI·Hook 실행·Parsec 원격 입력
