@@ -12,13 +12,13 @@ func TestHHKBModeIsEnabledByDefault(t *testing.T) {
 	}
 }
 
-func TestDisablingHHKBPassesAllHHKBKeysThrough(t *testing.T) {
+func TestDisablingHHKBPassesCapsAndBackspaceKeysThrough(t *testing.T) {
 	engine := New()
 	sink := &recorder{}
 	if !engine.SetHHKBEnabled(false) {
 		t.Fatal("could not disable idle HHKB mode")
 	}
-	for _, key := range []uint32{0x14, 0xA2, 0xA3, 0xDC, 0x08} {
+	for _, key := range []uint32{0x14, 0xDC, 0x08} {
 		target, mapped := engine.Target(key)
 		if target != key || mapped {
 			t.Fatalf("key %x must retain its original identity", key)
@@ -31,33 +31,6 @@ func TestDisablingHHKBPassesAllHHKBKeysThrough(t *testing.T) {
 	}
 	if len(sink.events) != 0 || engine.HasHeldInput() {
 		t.Fatal("disabled HHKB mode generated input or left keys held")
-	}
-}
-
-func TestOtherSwapsRemainEnabledWithoutHHKBMode(t *testing.T) {
-	engine := New()
-	engine.SetHHKBEnabled(false)
-	sink := &recorder{}
-	cases := []struct {
-		source uint32
-		target uint32
-	}{
-		{0xA4, 0x5B},
-		{0xA5, 0x5C},
-		{0x5B, 0xA4},
-		{0x5C, 0xA5},
-	}
-	var want []Output
-	for _, item := range cases {
-		engine.Handle(item.source, true, false, sink.send)
-		engine.Handle(item.source, false, false, sink.send)
-		want = append(want,
-			Output{Key: item.target, Down: true},
-			Output{Key: item.target, Down: false},
-		)
-	}
-	if !reflect.DeepEqual(sink.events, want) {
-		t.Fatalf("unrelated remaps changed: %v", sink.events)
 	}
 }
 
@@ -115,8 +88,9 @@ func TestHHKBChangeWaitsForHeldStrokeToFinish(t *testing.T) {
 			if engine.HHKBEnabled() != initiallyEnabled {
 				t.Fatal("rejected change still modified the setting")
 			}
+			_, mapped := engine.Target(key)
 			blocked := engine.Handle(key, false, false, sink.send)
-			if blocked != initiallyEnabled {
+			if blocked != mapped {
 				t.Fatal("key-up no longer matched key-down handling")
 			}
 			if !engine.SetHHKBEnabled(!initiallyEnabled) {
@@ -138,7 +112,41 @@ func TestChangingHHKBOptionPreservesGlobalPause(t *testing.T) {
 	if engine.HHKBEnabled() {
 		t.Fatal("resume reset the HHKB option")
 	}
-	if engine.Handle(0xA2, true, false, sink.send) {
-		t.Fatal("Control was remapped after resuming with HHKB disabled")
+	if !engine.Handle(0xA2, true, false, sink.send) {
+		t.Fatal("Control must retain Ctrl output for Mac Control with HHKB disabled")
+	}
+	engine.Handle(0xA2, false, false, sink.send)
+	want := []Output{
+		{Key: 0xA2, Down: true},
+		{Key: 0xA2, Down: false},
+	}
+	if !reflect.DeepEqual(sink.events, want) {
+		t.Fatalf("resumed Control mapping = %v", sink.events)
+	}
+}
+
+func TestDisablingHHKBMapsPhysicalControlsToMacControl(t *testing.T) {
+	for _, item := range []struct {
+		source uint32
+		target uint32
+	}{
+		{0xA2, 0xA2},
+		{0xA3, 0xA3},
+	} {
+		engine := New()
+		engine.SetHHKBEnabled(false)
+		sink := &recorder{}
+		for _, down := range []bool{true, false} {
+			if !engine.Handle(item.source, down, false, sink.send) {
+				t.Fatal("physical Control was not converted for Parsec swap mode")
+			}
+		}
+		want := []Output{
+			{Key: item.target, Down: true},
+			{Key: item.target, Down: false},
+		}
+		if !reflect.DeepEqual(sink.events, want) || engine.HasHeldInput() {
+			t.Fatalf("Control output = %v", sink.events)
+		}
 	}
 }

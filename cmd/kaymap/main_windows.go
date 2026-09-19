@@ -239,10 +239,10 @@ func toggleMapping() {
 
 func updateHHKBControls() {
 	checked := uintptr(0)
-	text := "Ctrl·CapsLock 원본 입력 유지\r\nBackspace·역슬래시(\\) 원본 입력 유지"
+	text := "Mac 기준: Ctrl → Control / CapsLock → CapsLock\r\nBackspace·역슬래시(\\) 원본 입력 유지"
 	if app.engine.HHKBEnabled() {
 		checked = 1
-		text = "CapsLock → Left Ctrl / 좌우 Ctrl → CapsLock\r\nBackspace ↔ 역슬래시(\\) 교환"
+		text = "Mac 기준: CapsLock → Control / Ctrl → CapsLock\r\nBackspace ↔ 역슬래시(\\) 교환"
 	}
 	sendMessage.Call(app.hhkbCheckbox, bmSetCheck, checked, 0)
 	setLabel(app.hhkbInfo, text)
@@ -371,7 +371,7 @@ func main() {
 	app.window, _, _ = createWindow.Call(
 		0,
 		uintptr(unsafe.Pointer(class.ClassName)),
-		uintptr(unsafe.Pointer(wide("Kaymap 0.4 — HHKB 옵션"))),
+		uintptr(unsafe.Pointer(wide("Kaymap 0.10 — Parsec 매핑 ON"))),
 		0x00CA0000,
 		0x80000000, 0x80000000, 660, 450,
 		0, 0, instance, 0,
@@ -381,7 +381,7 @@ func main() {
 		return
 	}
 	app.status = addControl("STATIC", "적용 중 — Windows 전체 키보드에 적용", 20, 20, 610, 30, 0)
-	addControl("STATIC", "기본 매핑: Alt ↔ Win (HHKB 모드와 무관하게 적용)\r\n\r\n실행 중 Windows 전체 키보드에 적용\r\n종료 버튼 또는 창 닫기로 키 매핑 해제", 20, 60, 610, 95, 0)
+	addControl("STATIC", "현재 키보드 실측 기준\r\nAlt → Command / Win → Option\r\n실행 중 Windows 전체 키보드에 적용\r\n종료 버튼 또는 창 닫기로 키 매핑 해제", 20, 60, 610, 95, 0)
 	app.hhkbCheckbox = addControl("BUTTON", "HHKB 모드", 20, 160, 610, 28, hhkbCheckboxID)
 	app.hhkbInfo = addControl("STATIC", "", 40, 192, 590, 55, 0)
 	updateHHKBControls()

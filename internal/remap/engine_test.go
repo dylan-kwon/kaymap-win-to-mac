@@ -25,8 +25,8 @@ func TestRequiredKeySwapsPreserveDownAndUp(t *testing.T) {
 		target uint32
 	}{
 		{"left alt", 0xA4, 0x5B},
-		{"left windows", 0x5B, 0xA4},
 		{"right alt", 0xA5, 0x5C},
+		{"left windows", 0x5B, 0xA4},
 		{"right windows", 0x5C, 0xA5},
 		{"backslash", 0xDC, 0x08},
 		{"backspace", 0x08, 0xDC},
@@ -152,9 +152,9 @@ func TestRepeatedBackslashRepeatsDeletion(t *testing.T) {
 func TestInjectedInputCannotTriggerReverseMapping(t *testing.T) {
 	engine := New()
 	sink := &recorder{}
-	engine.Handle(0xA4, true, false, sink.send)
-	if engine.Handle(0x5B, true, true, sink.send) {
-		t.Fatal("synthetic Windows key was remapped again")
+	engine.Handle(0x14, true, false, sink.send)
+	if engine.Handle(0xA2, true, true, sink.send) {
+		t.Fatal("synthetic Ctrl key for Mac Control was remapped again")
 	}
 	if len(sink.events) != 1 {
 		t.Fatal("recursive remapping generated extra events")
@@ -164,7 +164,7 @@ func TestInjectedInputCannotTriggerReverseMapping(t *testing.T) {
 func TestPauseReleasesHeldKeysAndConsumesTheirPhysicalRelease(t *testing.T) {
 	engine := New()
 	sink := &recorder{}
-	engine.Handle(0xA4, true, false, sink.send)
+	engine.Handle(0x14, true, false, sink.send)
 	engine.Handle(0xDC, true, false, sink.send)
 	if !engine.Pause(sink.send) {
 		t.Fatal("pause failed")
@@ -175,7 +175,7 @@ func TestPauseReleasesHeldKeysAndConsumesTheirPhysicalRelease(t *testing.T) {
 	if len(sink.events) != 4 {
 		t.Fatalf("held keys not released: %v", sink.events)
 	}
-	for _, key := range []uint32{0xA4, 0xDC} {
+	for _, key := range []uint32{0x14, 0xDC} {
 		if !engine.Handle(key, true, false, sink.send) {
 			t.Fatal("held key repeat escaped while paused")
 		}
@@ -183,7 +183,7 @@ func TestPauseReleasesHeldKeysAndConsumesTheirPhysicalRelease(t *testing.T) {
 			t.Fatal("orphan physical key-up escaped")
 		}
 	}
-	if engine.Handle(0xA4, true, false, sink.send) {
+	if engine.Handle(0x14, true, false, sink.send) {
 		t.Fatal("new input suppressed while paused")
 	}
 }
@@ -191,15 +191,15 @@ func TestPauseReleasesHeldKeysAndConsumesTheirPhysicalRelease(t *testing.T) {
 func TestResumeWaitsForPreviouslySuppressedKeys(t *testing.T) {
 	engine := New()
 	sink := &recorder{}
-	engine.Handle(0xA4, true, false, sink.send)
+	engine.Handle(0x14, true, false, sink.send)
 	engine.Pause(sink.send)
 	engine.Resume()
-	engine.Handle(0xA4, true, false, sink.send)
+	engine.Handle(0x14, true, false, sink.send)
 	if len(sink.events) != 2 {
 		t.Fatal("resume revived a held modifier")
 	}
-	engine.Handle(0xA4, false, false, sink.send)
-	engine.Handle(0xA4, true, false, sink.send)
+	engine.Handle(0x14, false, false, sink.send)
+	engine.Handle(0x14, true, false, sink.send)
 	if len(sink.events) != 3 {
 		t.Fatal("fresh press was not mapped")
 	}
@@ -208,7 +208,7 @@ func TestResumeWaitsForPreviouslySuppressedKeys(t *testing.T) {
 func TestUnmatchedKeyUpPassesThrough(t *testing.T) {
 	engine := New()
 	sink := &recorder{}
-	if engine.Handle(0xA4, false, false, sink.send) {
+	if engine.Handle(0x14, false, false, sink.send) {
 		t.Fatal("key held before startup must be allowed to release")
 	}
 }
@@ -219,7 +219,7 @@ func TestInputReconnectMustWaitForPhysicalAndOutputRelease(t *testing.T) {
 	if engine.HasHeldInput() {
 		t.Fatal("new engine should be idle")
 	}
-	engine.Handle(0x5B, true, false, sink.send)
+	engine.Handle(0xA2, true, false, sink.send)
 	if !engine.HasHeldInput() {
 		t.Fatal("reconnect could interrupt a held mapped modifier")
 	}
@@ -227,7 +227,7 @@ func TestInputReconnectMustWaitForPhysicalAndOutputRelease(t *testing.T) {
 	if !engine.HasHeldInput() {
 		t.Fatal("released output still has a physical key held")
 	}
-	engine.Handle(0x5B, false, false, sink.send)
+	engine.Handle(0xA2, false, false, sink.send)
 	if engine.HasHeldInput() {
 		t.Fatal("reconnect remained blocked after physical release")
 	}
@@ -236,17 +236,17 @@ func TestInputReconnectMustWaitForPhysicalAndOutputRelease(t *testing.T) {
 func TestFailedDownPassesOriginalStrokeThroughUntilRelease(t *testing.T) {
 	engine := New()
 	sink := &recorder{fail: true}
-	if engine.Handle(0xA4, true, false, sink.send) {
+	if engine.Handle(0x14, true, false, sink.send) {
 		t.Fatal("failed replacement swallowed original key-down")
 	}
 	sink.fail = false
-	if engine.Handle(0xA4, true, false, sink.send) {
+	if engine.Handle(0x14, true, false, sink.send) {
 		t.Fatal("partly remapped a stroke after initial send failure")
 	}
-	if engine.Handle(0xA4, false, false, sink.send) {
+	if engine.Handle(0x14, false, false, sink.send) {
 		t.Fatal("original key-up swallowed after failed key-down")
 	}
-	if !engine.Handle(0xA4, true, false, sink.send) {
+	if !engine.Handle(0x14, true, false, sink.send) {
 		t.Fatal("next stroke did not recover")
 	}
 }
@@ -254,9 +254,9 @@ func TestFailedDownPassesOriginalStrokeThroughUntilRelease(t *testing.T) {
 func TestFailedReleaseIsRetriedByPause(t *testing.T) {
 	engine := New()
 	sink := &recorder{}
-	engine.Handle(0xA4, true, false, sink.send)
+	engine.Handle(0x14, true, false, sink.send)
 	sink.fail = true
-	engine.Handle(0xA4, false, false, sink.send)
+	engine.Handle(0x14, false, false, sink.send)
 	if engine.Pause(sink.send) {
 		t.Fatal("reported cleanup success despite send failure")
 	}
@@ -265,8 +265,8 @@ func TestFailedReleaseIsRetriedByPause(t *testing.T) {
 		t.Fatal("release retry failed")
 	}
 	want := []Output{
-		{Key: 0x5B, Down: true},
-		{Key: 0x5B, Down: false},
+		{Key: 0xA2, Down: true},
+		{Key: 0xA2, Down: false},
 	}
 	if !reflect.DeepEqual(sink.events, want) {
 		t.Fatalf("release retry events = %v", sink.events)

@@ -18,6 +18,7 @@ func TestScanCodesForRequiredKeys(t *testing.T) {
 		{0x08, 0x0E, false},
 		{0xDC, 0x2B, false},
 		{0xA2, 0x1D, false},
+		{0xA3, 0x1D, true},
 		{0x14, 0x3A, false},
 	}
 	for _, item := range cases {

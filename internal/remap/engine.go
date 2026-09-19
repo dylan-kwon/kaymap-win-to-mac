@@ -28,14 +28,15 @@ func New() *Engine {
 	}
 }
 
+// Target은 현재 키보드 실측 및 HHKB ON 기준의 Windows 출력 키를 반환한다.
 func Target(key uint32) (uint32, bool) {
 	switch key {
 	case 0xA4:
 		return 0x5B, true
-	case 0x5B:
-		return 0xA4, true
 	case 0xA5:
 		return 0x5C, true
+	case 0x5B:
+		return 0xA4, true
 	case 0x5C:
 		return 0xA5, true
 	case 0xDC:
@@ -54,7 +55,11 @@ func Target(key uint32) (uint32, bool) {
 func (e *Engine) Target(key uint32) (uint32, bool) {
 	if !e.hhkbEnabled {
 		switch key {
-		case 0x14, 0xA2, 0xA3, 0xDC, 0x08:
+		case 0xA2:
+			return 0xA2, true
+		case 0xA3:
+			return 0xA3, true
+		case 0x14, 0xDC, 0x08:
 			return key, false
 		}
 	}

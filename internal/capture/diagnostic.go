@@ -14,10 +14,14 @@ type Diagnostic struct {
 	sent      bool
 }
 
-// Record는 매핑 대상 키의 마지막 누름만 메모리에 유지한다.
+// Record는 매핑 대상 키와 원본 Alt·Win 키의 마지막 누름만 메모리에 유지한다.
 func (d *Diagnostic) Record(source uint32, target uint32, attempted bool, sent bool) {
 	if _, mapped := remap.Target(source); !mapped {
-		return
+		switch source {
+		case 0xA4, 0xA5, 0x5B, 0x5C:
+		default:
+			return
+		}
 	}
 	d.count++
 	d.source = source

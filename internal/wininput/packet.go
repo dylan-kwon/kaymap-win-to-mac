@@ -29,6 +29,9 @@ func Encode(key uint32, down bool) ([40]byte, bool) {
 		scan = 0x2B
 	case 0xA2:
 		scan = 0x1D
+	case 0xA3:
+		scan = 0x1D
+		flags |= 0x0001
 	case 0x14:
 		scan = 0x3A
 	default:
