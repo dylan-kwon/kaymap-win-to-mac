@@ -1,10 +1,10 @@
 Kaymap — Parsec용 Windows 키 매핑
 
-- Windows 10/11 x64용 시험 버전 0.13 — Alt → Command·CapsLock → Control 출력 수정
-- 현재 사용 중인 Parsec 설정 유지, 최신 보고된 Alt → Control·CapsLock → Command를 기준으로 Windows 출력 교환
-- 0.13 변환 가정: Windows Ctrl → Mac Control, Windows Win → Mac Command, 실제 수신 재확인 필요
+- Windows 10/11 x64용 버전 1.0.0 — Alt → Command·CapsLock → Control 출력 수정
+- 현재 사용 중인 Parsec 설정 유지, HHKB 모드 기본 활성화
+- 예상 Mac 입력의 전제: Windows Ctrl → Mac Control, Windows Win → Mac Command, 실제 수신 재확인 필요
 - 기존 Kaymap 종료 후 모든 키를 뗀 상태에서 새 EXE 실행
-- 창 제목 Kaymap 0.13 — Parsec 매핑 ON 확인 후 사용할 Parsec 화면 클릭
+- 창 제목 Kaymap 1.0.0 — Parsec 매핑 ON 확인 후 사용할 Parsec 화면 클릭
 
 - 물리 Alt → Windows Win → Mac Command
 - 물리 Win → Windows Alt → Mac Option
