@@ -44,8 +44,8 @@ func TestHHKBModeCanBeEnabledAgain(t *testing.T) {
 	engine.Handle(0x14, true, false, sink.send)
 	engine.Handle(0x14, false, false, sink.send)
 	want := []Output{
-		{Key: 0x5B, Down: true},
-		{Key: 0x5B, Down: false},
+		{Key: 0xA2, Down: true},
+		{Key: 0xA2, Down: false},
 	}
 	if !reflect.DeepEqual(sink.events, want) {
 		t.Fatalf("HHKB mapping did not recover: %v", sink.events)
@@ -77,7 +77,7 @@ func TestHHKBBackspaceSwapsRecoverWithRepeatedInput(t *testing.T) {
 
 func TestHHKBChangeWaitsForHeldStrokeToFinish(t *testing.T) {
 	for _, initiallyEnabled := range []bool{true, false} {
-		for _, key := range []uint32{0x14, 0x5B, 0xA3, 0xDC, 0x08} {
+		for _, key := range []uint32{0x14, 0xA2, 0xA3, 0xDC, 0x08} {
 			engine := New()
 			engine.SetHHKBEnabled(initiallyEnabled)
 			sink := &recorder{}
@@ -113,12 +113,12 @@ func TestChangingHHKBOptionPreservesGlobalPause(t *testing.T) {
 		t.Fatal("resume reset the HHKB option")
 	}
 	if !engine.Handle(0xA2, true, false, sink.send) {
-		t.Fatal("Control must map to Win output for Mac Control with HHKB disabled")
+		t.Fatal("Control must map to Ctrl output for Mac Control with HHKB disabled")
 	}
 	engine.Handle(0xA2, false, false, sink.send)
 	want := []Output{
-		{Key: 0x5B, Down: true},
-		{Key: 0x5B, Down: false},
+		{Key: 0xA2, Down: true},
+		{Key: 0xA2, Down: false},
 	}
 	if !reflect.DeepEqual(sink.events, want) {
 		t.Fatalf("resumed Control mapping = %v", sink.events)
@@ -130,8 +130,8 @@ func TestDisablingHHKBMapsPhysicalControlsToMacControl(t *testing.T) {
 		source uint32
 		target uint32
 	}{
-		{0xA2, 0x5B},
-		{0xA3, 0x5C},
+		{0xA2, 0xA2},
+		{0xA3, 0xA3},
 	} {
 		engine := New()
 		engine.SetHHKBEnabled(false)

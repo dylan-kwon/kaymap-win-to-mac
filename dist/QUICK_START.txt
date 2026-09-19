@@ -1,40 +1,38 @@
 Kaymap — Parsec용 Windows 키 매핑
 
-- Windows 10/11 x64용 시험 버전 0.12 — Win → Option 입력 전달 호환성 시험
-- 물리 Win의 Alt 출력만 가상 키 방식으로 변경, Alt·CapsLock 동작 유지
-- Win → Option 실제 수신은 재확인 필요, Parsec Command·Control 교환 On 유지
-- 현재 사용 중인 Parsec 설정 유지, 키보드 실측 결과에 맞춰 출력 교환
-- 실측 동작에서 역산한 변환 기준: Ctrl → Command, Alt → Option, Win → Control
+- Windows 10/11 x64용 시험 버전 0.13 — Alt → Command·CapsLock → Control 출력 수정
+- 현재 사용 중인 Parsec 설정 유지, 최신 보고된 Alt → Control·CapsLock → Command를 기준으로 Windows 출력 교환
+- 0.13 변환 가정: Windows Ctrl → Mac Control, Windows Win → Mac Command, 실제 수신 재확인 필요
 - 기존 Kaymap 종료 후 모든 키를 뗀 상태에서 새 EXE 실행
-- 창 제목 Kaymap 0.12 — Parsec 매핑 ON 확인 후 사용할 Parsec 화면 클릭
+- 창 제목 Kaymap 0.13 — Parsec 매핑 ON 확인 후 사용할 Parsec 화면 클릭
 
-- 물리 Alt → Windows Ctrl → Mac Command
+- 물리 Alt → Windows Win → Mac Command
 - 물리 Win → Windows Alt → Mac Option
 - 좌우 키 각각 적용, Alt·Win 전용 체크박스 없이 고정
-- HHKB On: CapsLock → Windows Win → Mac Control, 좌우 Ctrl → CapsLock
-- HHKB Off: 좌우 Ctrl → Windows Win → Mac Control, CapsLock 원본 유지
+- HHKB On: CapsLock → Windows Ctrl → Mac Control, 좌우 Ctrl → CapsLock
+- HHKB Off: 좌우 Ctrl → Windows Ctrl → Mac Control, CapsLock 원본 유지
 - HHKB On: Backspace ↔ 역슬래시(\) 교환
 - HHKB Off: Backspace·역슬래시 원본 유지
 - HHKB 기본 활성화, 모든 키를 뗀 뒤 옵션 변경
 
 - Mac Command+C 복사: HHKB 설정과 무관하게 물리 Alt+C
 - Mac Control+C: HHKB On이면 물리 CapsLock+C, Off이면 물리 Ctrl+C
-- Windows 로컬 Ctrl+C 복사: 물리 Alt+C
+- Windows 로컬 Ctrl+C 복사: HHKB On이면 물리 CapsLock+C, Off이면 물리 Ctrl+C
 - 물리 Alt+A 전체 선택, Alt+W 창 닫기, Win → Option 인식 확인 필요
 - Parsec Command·Control 교환 설정 변경 시 최종 Mac 입력 변경 가능
 
 - 설치·재부팅·별도 런타임 불필요
 - Windows 전체 키보드에 적용, 일시정지·종료 시 원본 입력 복구
-- 일시정지·종료 후에는 Parsec의 Ctrl → Command, Alt → Option, Win → Control 변환만 적용
+- 일시정지·종료 후에는 Parsec의 Ctrl → Control, Alt → Option, Win → Command 변환만 적용
 - 다시 적용·입력 재연결·재실행 시 고정 매핑 적용
 - HHKB 옵션은 재실행 시 기본 활성화
 
 - 창 전환 후 모든 키를 떼고 1초 대기, 입력 연결 자동 갱신
 - 입력 다시 연결 클릭 후 사용할 창으로 돌아가 2초 이상 대기
-- Alt(L) → Ctrl(L): Command용 Windows Ctrl 출력
+- Alt(L) → Win(L): Command용 Windows Win 출력
 - Win(L) → Alt(L): Option용 Windows Alt 출력
-- CapsLock → Win(L): HHKB On의 Control용 Windows Win 출력
-- Ctrl(L) → Win(L): HHKB Off의 Control용 Windows Win 출력
+- CapsLock → Ctrl(L): HHKB On의 Control용 Windows Ctrl 출력
+- Ctrl(L) → Ctrl(L): HHKB Off의 Control용 Windows Ctrl 출력
 - Windows 전송 성공과 원격 앱 수신 확인은 별개
 - 일반 문자 입력 기록·파일 저장·네트워크 전송 없음
 

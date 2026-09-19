@@ -24,13 +24,13 @@ func TestRequiredKeySwapsPreserveDownAndUp(t *testing.T) {
 		source uint32
 		target uint32
 	}{
-		{"left alt", 0xA4, 0xA2},
-		{"right alt", 0xA5, 0xA3},
+		{"left alt", 0xA4, 0x5B},
+		{"right alt", 0xA5, 0x5C},
 		{"left windows", 0x5B, 0xA4},
 		{"right windows", 0x5C, 0xA5},
 		{"backslash", 0xDC, 0x08},
 		{"backspace", 0x08, 0xDC},
-		{"caps lock", 0x14, 0x5B},
+		{"caps lock", 0x14, 0xA2},
 		{"left control", 0xA2, 0x14},
 		{"right control", 0xA3, 0x14},
 	}
@@ -80,8 +80,8 @@ func TestCapsLockActsAsHeldControlForShortcutAndPause(t *testing.T) {
 	engine.Handle(0x43, false, false, sink.send)
 	engine.Pause(sink.send)
 	want := []Output{
-		{Key: 0x5B, Down: true},
-		{Key: 0x5B, Down: false},
+		{Key: 0xA2, Down: true},
+		{Key: 0xA2, Down: false},
 	}
 	if !reflect.DeepEqual(sink.events, want) {
 		t.Fatalf("Control chord events = %v", sink.events)
@@ -153,8 +153,8 @@ func TestInjectedInputCannotTriggerReverseMapping(t *testing.T) {
 	engine := New()
 	sink := &recorder{}
 	engine.Handle(0x14, true, false, sink.send)
-	if engine.Handle(0x5B, true, true, sink.send) {
-		t.Fatal("synthetic Win key for Mac Control was remapped again")
+	if engine.Handle(0xA2, true, true, sink.send) {
+		t.Fatal("synthetic Ctrl key for Mac Control was remapped again")
 	}
 	if len(sink.events) != 1 {
 		t.Fatal("recursive remapping generated extra events")
@@ -265,8 +265,8 @@ func TestFailedReleaseIsRetriedByPause(t *testing.T) {
 		t.Fatal("release retry failed")
 	}
 	want := []Output{
-		{Key: 0x5B, Down: true},
-		{Key: 0x5B, Down: false},
+		{Key: 0xA2, Down: true},
+		{Key: 0xA2, Down: false},
 	}
 	if !reflect.DeepEqual(sink.events, want) {
 		t.Fatalf("release retry events = %v", sink.events)

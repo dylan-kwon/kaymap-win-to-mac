@@ -9,8 +9,8 @@ var modifierMappings = []struct {
 	source uint32
 	target uint32
 }{
-	{0xA4, 0xA2},
-	{0xA5, 0xA3},
+	{0xA4, 0x5B},
+	{0xA5, 0x5C},
 	{0x5B, 0xA4},
 	{0x5C, 0xA5},
 }
@@ -85,7 +85,7 @@ func TestFixedModifierMappingSurvivesPauseAndResume(t *testing.T) {
 }
 
 func TestAltAndWindowsKeepSeparateModifierOutputs(t *testing.T) {
-	for _, pair := range [][4]uint32{{0xA4, 0x5B, 0xA2, 0xA4}, {0xA5, 0x5C, 0xA3, 0xA5}} {
+	for _, pair := range [][4]uint32{{0xA4, 0x5B, 0x5B, 0xA4}, {0xA5, 0x5C, 0x5C, 0xA5}} {
 		for _, altFirst := range []bool{true, false} {
 			for _, altReleasedFirst := range []bool{true, false} {
 				engine := New()

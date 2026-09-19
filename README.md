@@ -1,7 +1,7 @@
 # Kaymap — Parsec용 Windows 키 매핑
 
 - 설치·재부팅 없이 실행하는 Windows 10/11 x64용 포터블 프로그램
-- 현재 버전: 0.12, Win → Option 입력 전달 방식 호환성 시험
+- 현재 버전: 0.13, Alt → Command·CapsLock → Control 출력 수정
 - [EXE 다운로드](dist/kaymap-windows-x64.exe)
 - [배포 ZIP 다운로드](dist/kaymap-windows-x64.zip), 실행 파일·사용법·Go 라이선스 포함
 - 실행 중 Windows 전체 키보드에 적용, 일시정지·종료 시 원본 입력 복구
@@ -9,22 +9,19 @@
 
 ## 전제 및 사용 절차
 
-- 현재 사용 중인 Parsec 설정 유지, 키보드 실측 결과에 맞춰 출력 교환
+- 현재 사용 중인 Parsec 설정 유지, 최신 보고된 Alt → Control·CapsLock → Command를 기준으로 Windows 출력 교환
+- 0.13 변환 가정: Windows Ctrl → Mac Control, Windows Win → Mac Command, 실제 수신 재확인 필요
 - [Parsec Command·Control 교환 설정](https://support.parsec.app/hc/en-us/articles/32361367389972-Swap-Command-and-Ctrl-for-MacOS)
-- 0.10·HHKB On에서 사용자가 확인한 CapsLock → Command·Alt → Control 동작과 0.10 출력을 조합해 추론한 변환 기준
-- 0.11에서 Alt → Command·CapsLock → Control 정상 확인, 왼쪽 Win → Control 증상 보고
-- 0.12: 물리 Win의 Alt 출력만 가상 키 방식으로 변경, 원격 Option 수신은 실기 확인 필요
-- Alt·CapsLock의 매핑 및 출력 방식 유지, Parsec Command·Control 교환 On 유지
 
 | Windows에서 Parsec에 전달한 키 | Mac에서 감지되는 키 |
 | --- | --- |
-| Ctrl | Command |
+| Ctrl | Control |
 | Alt | Option |
-| Win | Control |
+| Win | Command |
 
 1. 기존 Kaymap 종료
 2. 모든 키를 뗀 상태에서 새 `kaymap-windows-x64.exe` 실행
-3. `Kaymap 0.12 — Parsec 매핑 ON` 창 확인
+3. `Kaymap 0.13 — Parsec 매핑 ON` 창 확인
 4. 필요한 경우 `HHKB 모드` 체크 변경, 기본값 활성화
 5. `적용 중` 표시 확인 후 Parsec 화면 클릭
 6. 물리 Alt+A 전체 선택·Alt+W 창 닫기·Win 키의 Option 인식 확인
@@ -38,8 +35,8 @@
 
 | 물리 Windows 키 | Kaymap의 Windows 출력 | Parsec을 거친 Mac 입력 |
 | --- | --- | --- |
-| Left Alt | Left Ctrl | Left Command |
-| Right Alt | Right Ctrl | Right Command |
+| Left Alt | Left Win | Left Command |
+| Right Alt | Right Win | Right Command |
 | Left Win | Left Alt | Left Option |
 | Right Win | Right Alt | Right Option |
 
@@ -57,16 +54,16 @@
 
 | 물리 Windows 키 | HHKB On: Windows 출력 → Mac 입력 | HHKB Off: Windows 출력 → Mac 입력 |
 | --- | --- | --- |
-| CapsLock | Left Win → Control | CapsLock → CapsLock |
-| Left Ctrl | CapsLock → CapsLock | Left Win → Control |
-| Right Ctrl | CapsLock → CapsLock | Right Win → Control |
+| CapsLock | Left Ctrl → Control | CapsLock → CapsLock |
+| Left Ctrl | CapsLock → CapsLock | Left Ctrl → Control |
+| Right Ctrl | CapsLock → CapsLock | Right Ctrl → Control |
 | Backspace | `\` → `\` | Backspace → Backspace |
 | `\` | Backspace → Backspace | `\` → `\` |
 
-- HHKB Off에서도 Ctrl을 Windows Win으로 출력하여 Mac Control 유지
+- HHKB Off에서도 Ctrl을 Windows Ctrl로 출력하여 Mac Control 유지
 - Mac Command+C 복사: HHKB 설정과 무관하게 물리 Alt+C
 - Mac Control+C: HHKB On이면 물리 CapsLock+C, Off이면 물리 Ctrl+C
-- Windows 로컬 Ctrl+C 복사: 물리 Alt+C
+- Windows 로컬 Ctrl+C 복사: HHKB On이면 물리 CapsLock+C, Off이면 물리 Ctrl+C
 - HHKB On에서 좌우 Ctrl 동시 입력: CapsLock 한 번 누름으로 합치고 마지막 Ctrl 해제 시 출력 해제
 - HHKB On에서 역슬래시를 누르고 있으면 Backspace 반복 전송
 - Shift+Backspace: HHKB On 및 US ANSI 배열 기준 `|` 입력
@@ -84,10 +81,10 @@
 
 | 진단 표시 예시 | 의미 |
 | --- | --- |
-| Alt(L) → Ctrl(L) / Windows 전송 성공 | Command용 Ctrl 입력 큐 삽입 성공 |
+| Alt(L) → Win(L) / Windows 전송 성공 | Command용 Win 입력 큐 삽입 성공 |
 | Win(L) → Alt(L) / Windows 전송 성공 | Option용 Alt 입력 큐 삽입 성공 |
-| CapsLock → Win(L) / Windows 전송 성공 | HHKB On에서 Control용 Win 입력 큐 삽입 성공 |
-| Ctrl(L) → Win(L) / Windows 전송 성공 | HHKB Off에서 Control용 Win 입력 큐 삽입 성공 |
+| CapsLock → Ctrl(L) / Windows 전송 성공 | HHKB On에서 Control용 Ctrl 입력 큐 삽입 성공 |
+| Ctrl(L) → Ctrl(L) / Windows 전송 성공 | HHKB Off에서 Control용 Ctrl 입력 큐 삽입 성공 |
 | Windows 전송 실패 | Windows 입력 삽입 실패, 대상 앱과의 권한 수준 확인 필요 |
 | 입력 대기 또는 입력 번호 미갱신 | 해당 입력의 Hook 도달 여부 및 적용 상태 확인 필요 |
 
@@ -99,7 +96,7 @@
 - 자동 검증: 보고된 Parsec 변환표와 Kaymap 출력을 합성한 최종 Mac 역할 확인
 - 자동 검증: 좌우 Modifier·A/W 조합·동시 입력 및 해제 순서·일시정지/재개·HHKB 전환·반복 입력·입력 정리·전송 실패·INPUT 직렬화·입력 재연결·진단 표시
 - Windows x64 빌드·배포 ZIP 무결성 검증 완료
-- 실제 Windows Hook·Parsec·Mac 앱을 통한 0.12의 Alt+W 동작은 실기 확인 필요
+- 실제 Windows Hook·Parsec·Mac 앱을 통한 0.13의 Alt+W 동작은 실기 확인 필요
 - 출력 기준: US ANSI 스캔 코드, 다른 키보드 배열 및 한영 전용 키는 추가 확인 필요
 - Hook을 거치지 않는 입력을 사용하는 앱의 호환성은 보장하지 않음
 - 관리자 권한 대상 앱에는 같은 권한 수준이 필요할 수 있음, 자동 권한 상승 없음

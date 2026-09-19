@@ -32,9 +32,9 @@ func New() *Engine {
 func Target(key uint32) (uint32, bool) {
 	switch key {
 	case 0xA4:
-		return 0xA2, true
+		return 0x5B, true
 	case 0xA5:
-		return 0xA3, true
+		return 0x5C, true
 	case 0x5B:
 		return 0xA4, true
 	case 0x5C:
@@ -44,7 +44,7 @@ func Target(key uint32) (uint32, bool) {
 	case 0x08:
 		return 0xDC, true
 	case 0x14:
-		return 0x5B, true
+		return 0xA2, true
 	case 0xA2, 0xA3:
 		return 0x14, true
 	default:
@@ -56,9 +56,9 @@ func (e *Engine) Target(key uint32) (uint32, bool) {
 	if !e.hhkbEnabled {
 		switch key {
 		case 0xA2:
-			return 0x5B, true
+			return 0xA2, true
 		case 0xA3:
-			return 0x5C, true
+			return 0xA3, true
 		case 0x14, 0xDC, 0x08:
 			return key, false
 		}
