@@ -5,15 +5,15 @@ import (
 	"testing"
 )
 
-// 현재 키보드에서 보고된 실제 동작(Ctrl 출력 → Control, Win 출력 → Command)을 기준으로 검증한다.
+// 0.10·HHKB ON에서 보고된 Mac 입력으로 추론한 변환(Ctrl → Command, Win → Control)을 검증한다.
 func observedMacRole(key uint32) string {
 	switch key {
 	case 0xA2, 0xA3:
-		return "Control"
+		return "Command"
 	case 0xA4, 0xA5:
 		return "Option"
 	case 0x5B, 0x5C:
-		return "Command"
+		return "Control"
 	case 0x14:
 		return "CapsLock"
 	default:

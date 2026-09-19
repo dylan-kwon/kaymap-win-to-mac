@@ -1,1 +1,1 @@
-bc02cba6fe1f2f7578aba6842cf406eeeb849e8a9ca369eb175fe2f29a48a510  kaymap-windows-x64.exe
+2e2ec8161dde1a2d70c37f1e84ca2b293f29388a98c2a06c41f29df7c7ec1237  kaymap-windows-x64.exe
