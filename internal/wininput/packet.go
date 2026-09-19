@@ -5,7 +5,7 @@ import "encoding/binary"
 
 const Marker uint64 = 0x4B41594D4150
 
-// Encode는 US ANSI 키 위치의 스캔 코드를 사용한다.
+// Encode는 Alt 출력에 가상 키를, 나머지 출력에 US ANSI 스캔 코드를 사용한다.
 // Windows x64/ARM64의 INPUT 공용체 정렬과 크기를 명시적으로 보존한다.
 func Encode(key uint32, down bool) ([40]byte, bool) {
 	var packet [40]byte
@@ -36,6 +36,10 @@ func Encode(key uint32, down bool) ([40]byte, bool) {
 		scan = 0x3A
 	default:
 		return packet, false
+	}
+	if key == 0xA4 || key == 0xA5 {
+		flags &^= 0x0008
+		binary.LittleEndian.PutUint16(packet[8:10], uint16(key))
 	}
 	if !down {
 		flags |= 0x0002

@@ -1,10 +1,12 @@
 Kaymap — Parsec용 Windows 키 매핑
 
-- Windows 10/11 x64용 시험 버전 0.11 — 현재 키보드 실측 기준
+- Windows 10/11 x64용 시험 버전 0.12 — Win → Option 입력 전달 호환성 시험
+- 물리 Win의 Alt 출력만 가상 키 방식으로 변경, Alt·CapsLock 동작 유지
+- Win → Option 실제 수신은 재확인 필요, Parsec Command·Control 교환 On 유지
 - 현재 사용 중인 Parsec 설정 유지, 키보드 실측 결과에 맞춰 출력 교환
 - 실측 동작에서 역산한 변환 기준: Ctrl → Command, Alt → Option, Win → Control
 - 기존 Kaymap 종료 후 모든 키를 뗀 상태에서 새 EXE 실행
-- 창 제목 Kaymap 0.11 — Parsec 매핑 ON 확인 후 사용할 Parsec 화면 클릭
+- 창 제목 Kaymap 0.12 — Parsec 매핑 ON 확인 후 사용할 Parsec 화면 클릭
 
 - 물리 Alt → Windows Ctrl → Mac Command
 - 물리 Win → Windows Alt → Mac Option

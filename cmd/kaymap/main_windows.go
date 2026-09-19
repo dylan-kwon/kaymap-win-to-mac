@@ -371,7 +371,7 @@ func main() {
 	app.window, _, _ = createWindow.Call(
 		0,
 		uintptr(unsafe.Pointer(class.ClassName)),
-		uintptr(unsafe.Pointer(wide("Kaymap 0.11 — Parsec 매핑 ON"))),
+		uintptr(unsafe.Pointer(wide("Kaymap 0.12 — Parsec 매핑 ON"))),
 		0x00CA0000,
 		0x80000000, 0x80000000, 660, 450,
 		0, 0, instance, 0,

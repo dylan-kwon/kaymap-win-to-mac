@@ -11,8 +11,6 @@ func TestScanCodesForRequiredKeys(t *testing.T) {
 		scan     uint16
 		extended bool
 	}{
-		{0xA4, 0x38, false},
-		{0xA5, 0x38, true},
 		{0x5B, 0x5B, true},
 		{0x5C, 0x5C, true},
 		{0x08, 0x0E, false},
@@ -53,5 +51,26 @@ func TestScanCodesForRequiredKeys(t *testing.T) {
 func TestUnknownKeyIsRejected(t *testing.T) {
 	if _, ok := Encode(0x43, true); ok {
 		t.Fatal("unsupported key must not be injected")
+	}
+}
+
+func TestOptionOutputsUseExplicitAltVirtualKeys(t *testing.T) {
+	for _, key := range []uint32{0xA4, 0xA5} {
+		for _, down := range []bool{true, false} {
+			packet, ok := Encode(key, down)
+			if !ok {
+				t.Fatalf("Alt output %x was rejected", key)
+			}
+			if got := binary.LittleEndian.Uint16(packet[8:10]); got != uint16(key) {
+				t.Fatalf("Alt virtual key = %x, want %x", got, key)
+			}
+			flags := binary.LittleEndian.Uint32(packet[12:16])
+			if flags&0x0008 != 0 {
+				t.Fatal("Alt output must use virtual-key injection")
+			}
+			if (flags&0x0001 != 0) != (key == 0xA5) || (flags&0x0002 == 0) != down {
+				t.Fatalf("Alt side or release flags changed: %x", flags)
+			}
+		}
 	}
 }
